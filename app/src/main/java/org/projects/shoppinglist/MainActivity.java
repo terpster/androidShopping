@@ -16,17 +16,23 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
+import com.firebase.ui.database.FirebaseListAdapter;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import android.widget.TextView;
 
-import com.google.android.gms.appindexing.Action;
+
+/*import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.appindexing.Thing;*/
+/*
 import com.google.android.gms.common.api.GoogleApiClient;
+*/
 
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements deleteFragment.OnPositiveListener{
+public class MainActivity extends AppCompatActivity {
 
-    static deleteFragment dialog;
     static Context context;
     Button mButton;
     EditText mEdit;
@@ -35,92 +41,58 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
     String value;
     Button dButton;
     Button cButton;
-    ArrayAdapter<Product> adapter;
+    static FirebaseListAdapter<Product> adapter;
     ListView listView;
     ArrayList<Product> bag = new ArrayList<Product>();
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    private GoogleApiClient client;
+    public static FirebaseListAdapter getMyAdapter(){return adapter;}
 
-    public ArrayAdapter getMyAdapter() {
-        return adapter;
-    }
-    @Override
-    public void onPositiveClicked() {
-        //Do your update stuff here to the listview
-        //and the bag etc
-        //just to show how to get arguments from the bag.
-        Toast toast = Toast.makeText(context,
-                "positive button clicked", Toast.LENGTH_LONG);
-        toast.show();
-        bag.clear(); //here you can do stuff with the bag and
-        //adapter etc.
-    }
-    public void showDialog(View v) {
-        //showing our dialog.
-
-        dialog = new deleteFragment();
-        //Here we show the dialog
-        //The tag "MyFragement" is not important for us.
-        dialog.show(getFragmentManager(), "MyFragment");
-    }
-    public static class MyDialog extends deleteFragment {
-
-
-        @Override
-        protected void negativeClick() {
-            //Here we override the method and can now do something
-            Toast toast = Toast.makeText(context,
-                    "negative button clicked", Toast.LENGTH_SHORT);
-            toast.show();
-        }
-    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mButton = (Button) findViewById(R.id.addButton);
         dButton = (Button) findViewById(R.id.deleteSelctedButton);
         cButton = (Button) findViewById(R.id.clearListButton);
+        listView = (ListView) findViewById(R.id.list);
         if (savedInstanceState != null) {
             if (savedInstanceState.containsKey("saveBag"))
                 bag = savedInstanceState.getParcelableArrayList("saveBag");
         }
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        final DatabaseReference firebase = FirebaseDatabase.getInstance().getReference().child("items");
+        adapter = new FirebaseListAdapter<Product>(this, Product.class, android.R.layout.simple_list_item_checked, firebase) {
+            @Override
+            protected void populateView(View view, Product product, int i) {
+                TextView textView = (TextView) view.findViewById(android.R.id.text1); //standard android id.
+                textView.setText(product.toString());
+            }
+        };
+        listView.setAdapter(adapter);
 
         dButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 int remove = listView.getCheckedItemPosition();
                 if (remove >= 0) {
-                    bag.remove(remove);
+                    int index = listView.getCheckedItemPosition();
+                    getMyAdapter().getRef(index).setValue(null);
                     getMyAdapter().notifyDataSetChanged();
                 }
                 listView.clearChoices();
-
             }
         });
         cButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                bag.clear();
+                int listCount = adapter.getCount();
+                for(int i=listCount-1;i>=0;i--){
+                    getMyAdapter().getRef(i).setValue(null);
+                }
+
                 getMyAdapter().notifyDataSetChanged();
             }
         });
-        //getting our listiew - you can check the ID in the xml to see that it
-        //is indeed specified as "list"
-        listView = (ListView) findViewById(R.id.list);
-        //here we create a new adapter linking the bag and the
-        //listview
-        adapter = new ArrayAdapter<Product>(this,
-                android.R.layout.simple_list_item_checked, bag);
-
-        //setting the adapter on the listview
-        listView.setAdapter(adapter);
         //here we set the choice mode - meaning in this case we can
         //only select one item at a time.
         listView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
@@ -132,7 +104,12 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
                 value = mEdit.getText().toString();
                 qText = (EditText) findViewById(R.id.quantityText);
                 qValue = Integer.parseInt(qText.getText().toString());
+/*
                 bag.add(new Product(value, qValue));
+*/
+                Product p = new Product(value, qValue);
+                firebase.push().setValue(p);
+
                 //The next line is needed in order to say to the ListView
                 //that the data has changed - we have added stuff now!
                 getMyAdapter().notifyDataSetChanged();
@@ -146,7 +123,9 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
+/*
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+*/
     }
 
     @Override
@@ -161,6 +140,16 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
+        switch (item.getItemId()){
+            case R.id.item_delete:
+                int listCount = adapter.getCount();
+                for(int i=listCount-1;i>=0;i--){
+                    getMyAdapter().getRef(i).setValue(null);
+                }
+
+                getMyAdapter().notifyDataSetChanged();
+        }
+
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
@@ -184,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
-    public Action getIndexApiAction() {
+   /* public Action getIndexApiAction() {
         Thing object = new Thing.Builder()
                 .setName("Main Page") // TODO: Define a title for the content shown.
                 // TODO: Make sure this auto-generated URL is correct.
@@ -194,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
                 .setObject(object)
                 .setActionStatus(Action.STATUS_TYPE_COMPLETED)
                 .build();
-    }
+    }*/
 
     @Override
     public void onStart() {
@@ -202,8 +191,10 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client.connect();
+/*        client.connect();*/
+/*
         AppIndex.AppIndexApi.start(client, getIndexApiAction());
+*/
     }
 
     @Override
@@ -212,8 +203,10 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
+/*
         AppIndex.AppIndexApi.end(client, getIndexApiAction());
-        client.disconnect();
+*/
+/*        client.disconnect();*/
     }
 }
 

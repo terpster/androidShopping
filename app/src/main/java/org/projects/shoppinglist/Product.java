@@ -49,4 +49,17 @@ public class Product implements Parcelable{
     public void writeToParcel(Parcel dest, int flags) {
 
     }
+
+    public String getName(){
+        return this.name;
+    }
+    public void setName(String nName){
+        this.name = nName;
+    }
+    public int getQuantity(){
+        return this.quantity;
+    }
+    public void setQuantity(int nQuant){
+        this.quantity = nQuant;
+    }
 }
