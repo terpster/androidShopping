@@ -1,22 +1,19 @@
 package org.projects.shoppinglist;
 
-import android.app.Activity;
+
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
+
 import android.os.Bundle;
-import android.os.Parcel;
-import android.os.Parcelable;
+
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.util.StringBuilderPrinter;
+
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayAdapter;
+
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -26,15 +23,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import android.widget.TextView;
 import android.support.v7.widget.ShareActionProvider;
-import android.support.v4.view.MenuItemCompat;
 
-
-/*import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.appindexing.Thing;*/
-/*
-import com.google.android.gms.common.api.GoogleApiClient;
-*/
 
 import java.util.ArrayList;
 
@@ -55,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
     ArrayList<Product> bag = new ArrayList<Product>();
     public static FirebaseListAdapter getMyAdapter(){return adapter;}
     static deleteFragment dialog;
+    public View viewW;
     public void saveCopy()
     {
         lastDeletedPosition = listView.getCheckedItemPosition();
@@ -62,18 +52,21 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
     }
     @Override
     public void onPositiveClicked() {
-        //Do your update stuff here to the listview
-        //and the bag etc
-        //just to show how to get arguments from the bag.
-        Toast toast = Toast.makeText(context,
-                "You cleared your list!", Toast.LENGTH_LONG);
-        toast.show();
-         int listCount = adapter.getCount();
-                for(int i=listCount-1;i>=0;i--){
-                    getMyAdapter().getRef(i).setValue(null);
-                }
+        int listCount = adapter.getCount();
+        if(listCount >0){
+            Toast toast = Toast.makeText(context,
+                    "You cleared your list!", Toast.LENGTH_LONG);
+            toast.show();
+            for(int i=listCount-1;i>=0;i--){
+                getMyAdapter().getRef(i).setValue(null);
+            }
 
-                getMyAdapter().notifyDataSetChanged();
+            getMyAdapter().notifyDataSetChanged();
+        }else {
+            Toast toast = Toast.makeText(context,
+                    "Nothing to clear", Toast.LENGTH_LONG);
+            toast.show();
+        }
     }
     public static class MyDialog extends deleteFragment {
 
@@ -127,10 +120,10 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
             public void onClick(View v) {
 
                 int remove = listView.getCheckedItemPosition();
-                if (remove >= 0 ) {
+                if (remove >= 0) {
                     saveCopy();
-                    int index = listView.getCheckedItemPosition();
-                    getMyAdapter().getRef(index).setValue(null);
+                    listView.clearChoices();
+                    getMyAdapter().getRef(remove).setValue(null);
                     getMyAdapter().notifyDataSetChanged();
                 }
                 final View parent = listView;
@@ -169,46 +162,26 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
                 mEdit = (EditText) findViewById(R.id.editText);
                 value = mEdit.getText().toString();
                 qText = (EditText) findViewById(R.id.quantityText);
-                qValue = Integer.parseInt(qText.getText().toString());
-/*
-                bag.add(new Product(value, qValue));
-*/
-                Product p = new Product(value, qValue);
-                firebase.push().setValue(p);
 
-                //The next line is needed in order to say to the ListView
-                //that the data has changed - we have added stuff now!
-                getMyAdapter().notifyDataSetChanged();
+                if(!qText.getText().toString().equals("")) {
+                    qValue = Integer.parseInt(qText.getText().toString());
+                    Product p = new Product(value, qValue);
+                    firebase.push().setValue(p);
+
+                    //The next line is needed in order to say to the ListView
+                    //that the data has changed - we have added stuff now!
+                    getMyAdapter().notifyDataSetChanged();
+                }
             }
         });
-        //The next line is needed in order to say to the ListView
-        //that the data has changed - we have added stuff now!
-
-        //add some stuff to the list so we have something
-        // to show on app startup
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-/*
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
-*/
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        // Locate MenuItem with ShareActionProvider
-        // Fetch and store ShareActionProvider
-        // Return true to display menu
-        /*mShareActionProvider.setShareIntent(getShareIntent());*/
         return true;
     }
-
-
-
-
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -217,12 +190,14 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
         // as you specify a parent activity in AndroidManifest.xml.
         switch (item.getItemId()){
             case R.id.item_delete:
-                int listCount = adapter.getCount();
+                /*int listCount = adapter.getCount();
                 for(int i=listCount-1;i>=0;i--){
                     getMyAdapter().getRef(i).setValue(null);
                 }
 
-                getMyAdapter().notifyDataSetChanged();
+                getMyAdapter().notifyDataSetChanged();*/
+                showDialog(viewW);
+
         }
 
         int id = item.getItemId();
@@ -235,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
         //Convert the listview to strings and collect them in a Strinbuilder
         ArrayList<String> shareList = new ArrayList<String>();
         StringBuilder listString = new StringBuilder();
-        shareList.add("Min inkøbsliste: ");
+        shareList.add("Min indkøbsliste: ");
         for(int i=0; i<listView.getCount();i++){
             Product p = (Product) listView.getItemAtPosition(i);
             String s = p.toString();
@@ -246,9 +221,9 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
         }
         if(id == R.id.menu_item_share && listView.getCount() !=0){
             Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setType("text/plain"); //MIME type
+            intent.setType("text/plain");
             String textToShare = listString.toString();
-            intent.putExtra(Intent.EXTRA_TEXT, textToShare); //add the text to t
+            intent.putExtra(Intent.EXTRA_TEXT, textToShare);
             startActivity(intent);
         }
 
@@ -264,44 +239,16 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
 
     }
 
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-   /* public Action getIndexApiAction() {
-        Thing object = new Thing.Builder()
-                .setName("Main Page") // TODO: Define a title for the content shown.
-                // TODO: Make sure this auto-generated URL is correct.
-                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
-                .build();
-        return new Action.Builder(Action.TYPE_VIEW)
-                .setObject(object)
-                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
-                .build();
-    }*/
-
     @Override
     public void onStart() {
         super.onStart();
 
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-/*        client.connect();*/
-/*
-        AppIndex.AppIndexApi.start(client, getIndexApiAction());
-*/
     }
 
     @Override
     public void onStop() {
         super.onStop();
 
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-/*
-        AppIndex.AppIndexApi.end(client, getIndexApiAction());
-*/
-/*        client.disconnect();*/
     }
 }
 
