@@ -51,8 +51,8 @@ public class deleteFragment extends DialogFragment {
 		//Here we create a new dialogbuilder;
 		AlertDialog.Builder alert = new AlertDialog.Builder(
 				getActivity());
-		alert.setTitle("Delete");
-		alert.setMessage("are you sure want to delete");
+		alert.setTitle("Clear");
+		alert.setMessage("are you sure want to clear your list");
 	    alert.setPositiveButton("yes", pListener);
 		alert.setNegativeButton("no", nListener);
 
