@@ -43,8 +43,10 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
     private ShareActionProvider mShareActionProvider;
     ArrayList<Product> bag = new ArrayList<Product>();
     public static FirebaseListAdapter getMyAdapter(){return adapter;}
+
     static deleteFragment dialog;
     public View viewW;
+
     public void saveCopy()
     {
         lastDeletedPosition = listView.getCheckedItemPosition();
@@ -97,7 +99,8 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
         cButton = (Button) findViewById(R.id.clearListButton);
         listView = (ListView) findViewById(R.id.list);
         final View parent = findViewById(R.id.layout);
-
+        String shoppingName = ShoppingPreferenceFragment.getName(this);
+        updateUI(shoppingName);
         this.context = this;
         if (savedInstanceState != null) {
             if (savedInstanceState.containsKey("saveBag"))
@@ -175,7 +178,24 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
             }
         });
     }
-
+    public void updateUI(String name)
+    {
+        TextView listName = (TextView) findViewById(R.id.list_name);
+        listName.setText(name);
+    }
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        if (requestCode==1) //the code means we came back from settings
+        {
+            //I can can these methods like this, because they are static
+            String name = ShoppingPreferenceFragment.getName(this);
+            String message = "Your shopping list name: "+name;
+            Toast toast = Toast.makeText(this,message,Toast.LENGTH_LONG);
+            toast.show();
+            updateUI(name);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -199,6 +219,16 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
                 showDialog(viewW);
 
         }
+        if (item.getItemId()==R.id.action_settings)
+        {
+            //Start our settingsactivity and listen to result - i.e.
+            //when it is finished.
+            Intent intent = new Intent(this,SettingsActivity.class);
+            startActivityForResult(intent,1);
+            //notice the 1 here - this is the code we then listen for in the
+            //onActivityResult
+
+        }
 
         int id = item.getItemId();
 
@@ -210,7 +240,7 @@ public class MainActivity extends AppCompatActivity implements deleteFragment.On
         //Convert the listview to strings and collect them in a Strinbuilder
         ArrayList<String> shareList = new ArrayList<String>();
         StringBuilder listString = new StringBuilder();
-        shareList.add("Min indkøbsliste: ");
+        shareList.add("My shopping list("+ShoppingPreferenceFragment.getName(this)+") : ");
         for(int i=0; i<listView.getCount();i++){
             Product p = (Product) listView.getItemAtPosition(i);
             String s = p.toString();
